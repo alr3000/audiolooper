@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Audio Looper</string>
     <string name="title_activity_btlatency">Bluetooth Calibration</string>
+    <string name="no_record_permission_alert">Recording is not be available. Check App Permissions in your phone\'s Settings Menu.</string>
 </resources>

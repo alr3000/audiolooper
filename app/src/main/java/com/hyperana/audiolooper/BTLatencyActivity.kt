@@ -1,6 +1,7 @@
 package com.hyperana.audiolooper
 
 import android.graphics.Color
+import android.media.MediaRecorder
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -26,9 +27,11 @@ class BTLatencyActivity : AppCompatActivity() {
     val PROGRESS_INTERVAL = 40L //ms
 
     var metronome: MetronomeViewHolder? = null
-
-    var beatTimer: Timer? = null
     var progressTimer: Timer? = null
+
+    var recorder: MediaRecorder? = null
+    var filename = "" //set after create for directory
+
 
     var measure = 0
     enum class State {
@@ -41,17 +44,18 @@ class BTLatencyActivity : AppCompatActivity() {
         set(value) {
             field = value
             metronome?.apply {
-                color = when (value) {
-                    State.PREROLL -> Color.YELLOW
-                    State.RECORDING -> Color.GREEN
-                    else -> Color.GRAY
-                }
+
                 container.isSelected = (value != State.NONE)
                 container.isActivated = (value == State.RECORDING)
 
                 if (value == State.NONE) progress.progress = 0
                 if (value == State.RECORDING) progress.isActivated = true
             }
+            button_record?.apply {
+                isSelected = (value == State.PREROLL)
+                isActivated = (value == State.RECORDING)
+            }
+
         }
 
     class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMinute: Int) {
@@ -63,7 +67,6 @@ class BTLatencyActivity : AppCompatActivity() {
         val progressFactor = 100.0/bpMeasure
         val progressOffset = 50/bpMeasure
 
-        var color = Color.GRAY
            var index = 0
 
         init {
@@ -98,31 +101,13 @@ class BTLatencyActivity : AppCompatActivity() {
             }
         }
 
-        fun advance() : Int {
+        fun advance(){
             index = (index + 1)%bpMeasure
-
-           // progress.setProgress((index*progressFactor + progressOffset).toInt())
-
-                return index
-
-        }
+            //todo: flash beat background
+       }
     }
 
 
-    inner class BeatTask : TimerTask() {
-        override fun run() {
-            runOnUiThread {
-                try {
-                    Log.d(TAG, "beatTask")
-                    if (metronome?.advance() == 0) {
-                        nextMeasure()
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "beatTask failed", e)
-                }
-            }
-        }
-    }
 
     inner class ProgressTask : TimerTask() {
         val start = System.currentTimeMillis()
@@ -158,6 +143,10 @@ class BTLatencyActivity : AppCompatActivity() {
             setTitle(R.string.title_activity_btlatency)
         }
 
+        //todo: make this cache file
+        filename = "${externalCacheDir!!.absolutePath}/calibration.3gp"
+
+
         findViewById<ViewGroup>(R.id.metronome_frame)?.also {
             metronome = MetronomeViewHolder(it, BPMEASURE, BPMINUTE)
         }
@@ -185,12 +174,14 @@ class BTLatencyActivity : AppCompatActivity() {
 
 
     fun stop() {
-        measure = 0
-        beatTimer?.cancel()
-        beatTimer = null
         progressTimer?.cancel()
         progressTimer = null
 
+        recorder?.stop()
+        recorder?.release()
+        recorder = null
+
+        measure = 0
         state = State.NONE
     }
 
@@ -212,9 +203,6 @@ class BTLatencyActivity : AppCompatActivity() {
         val period = 60*1000L/BPMINUTE
         state = State.PREROLL
 
-        beatTimer = Timer().apply {
-           // scheduleAtFixedRate(BeatTask(), period, period)
-        }
         progressTimer = Timer().apply {
             scheduleAtFixedRate(ProgressTask(), PROGRESS_INTERVAL, PROGRESS_INTERVAL)
         }
@@ -222,11 +210,30 @@ class BTLatencyActivity : AppCompatActivity() {
     }
 
     fun startRecording() {
+        Log.d(TAG, "startRecording: ${System.currentTimeMillis()}")
         state = State.RECORDING
+        //todo: record audio to temp file
+
+        recorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            setOutputFile(filename)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+
+            try {
+                prepare()
+            } catch (e: Exception) {
+                Log.e(TAG, "prepare() failed")
+            }
+
+            start()
+        }
+
     }
 
     fun stopRecording() {
         stop()
+
         state = State.NONE
     }
 

@@ -46,13 +46,13 @@
                         android:layout_height="@android:dimen/notification_large_icon_height"
                         app:srcCompat="@android:drawable/radiobutton_off_background"
                         android:id="@+id/button_record" android:layout_weight="1"
-                        android:layout_margin="@dimen/highlight_padding"/>
+                        android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"/>
                 <ImageButton
                         android:layout_width="wrap_content"
                         android:layout_height="@android:dimen/notification_large_icon_height"
                         app:srcCompat="@android:drawable/ic_media_play"
                         android:id="@+id/button_play" android:layout_weight="1"
-                        android:layout_margin="@dimen/highlight_padding"/>
+                        android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"/>
             </LinearLayout>
 
         </LinearLayout>
