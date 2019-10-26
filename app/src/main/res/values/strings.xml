@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Audio Looper</string>
+    <string name="title_activity_btlatency">Bluetooth Calibration</string>
+</resources>

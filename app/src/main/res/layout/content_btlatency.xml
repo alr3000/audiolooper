@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:showIn="@layout/activity_btlatency"
+        tools:context=".BTLatencyActivity">
+
+    <!-- metronome countdown and cursor -->
+    <FrameLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:id="@+id/metronome_frame" style="@style/FramedComponent"
+            android:background="@drawable/active_frame">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:orientation="vertical" android:background="@android:color/background_light"
+                      android:gravity="center">
+
+
+            <LinearLayout
+                    android:id="@+id/metronome_beat_box"
+                    android:layout_width="match_parent"
+                    android:layout_height="@android:dimen/notification_large_icon_height"
+                    android:orientation="horizontal" android:minWidth="@android:dimen/thumbnail_width"
+                    android:paddingLeft="@dimen/highlight_padding" android:paddingRight="@dimen/highlight_padding"/>
+
+            <SeekBar
+                    android:layout_width="match_parent"
+                    android:layout_height="@android:dimen/notification_large_icon_height"
+                    android:id="@+id/metronome_progress"
+                    android:layout_gravity="center|center_vertical"
+                    android:splitTrack="false" android:progressTint="@color/active_color"/>
+
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:id="@+id/controls_frame">
+                <ImageButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="@android:dimen/notification_large_icon_height"
+                        app:srcCompat="@android:drawable/radiobutton_off_background"
+                        android:id="@+id/button_record" android:layout_weight="1"
+                        android:layout_margin="@dimen/highlight_padding"/>
+                <ImageButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="@android:dimen/notification_large_icon_height"
+                        app:srcCompat="@android:drawable/ic_media_play"
+                        android:id="@+id/button_play" android:layout_weight="1"
+                        android:layout_margin="@dimen/highlight_padding"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </FrameLayout>
+
+
+    <!-- latency slider and save -->
+    <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:id="@+id/latency_frame"
+            app:layout_constraintTop_toBottomOf="@id/metronome_frame" style="@style/FramedComponent">
+
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" android:background="@android:color/background_light">
+            <SeekBar
+                    android:layout_width="match_parent"
+                    android:layout_height="@android:dimen/notification_large_icon_height"
+                    android:id="@+id/latency_slider" android:layout_gravity="center_vertical"/>
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                <EditText
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:inputType="number"
+                        android:ems="10"
+                        android:id="@+id/latency_text" android:layout_weight="1" android:text="0"
+                        android:enabled="false" android:layout_gravity="center" android:gravity="center"/>
+                <ImageButton
+                        android:id="@+id/button_save"
+                        android:layout_width="0dp"
+                        android:layout_height="@android:dimen/notification_large_icon_height"
+                        android:layout_weight="1" android:layout_margin="@dimen/highlight_padding"
+                        android:src="@android:drawable/ic_menu_save"/>
+
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
