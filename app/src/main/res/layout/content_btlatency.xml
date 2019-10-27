@@ -35,24 +35,34 @@
                     android:layout_height="@android:dimen/notification_large_icon_height"
                     android:id="@+id/metronome_progress"
                     android:layout_gravity="center|center_vertical"
-                    android:splitTrack="false" android:progressTint="@color/active_color"/>
+                    android:splitTrack="true" android:progressTint="@color/active_color"/>
 
             <LinearLayout
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:id="@+id/controls_frame">
-                <ImageButton
-                        android:layout_width="wrap_content"
+                <ToggleButton
+                        android:layout_width="0dp"
                         android:layout_height="@android:dimen/notification_large_icon_height"
                         app:srcCompat="@android:drawable/radiobutton_off_background"
                         android:id="@+id/button_record" android:layout_weight="1"
-                        android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"/>
-                <ImageButton
-                        android:layout_width="wrap_content"
+                        android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"
+                        android:button="@android:drawable/btn_radio"
+                        android:checked="false" android:clickable="true"
+                        android:textOff="record" android:textOn="cancel"
+                        android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"
+                />
+                <ToggleButton
+                        android:layout_width="0dp"
                         android:layout_height="@android:dimen/notification_large_icon_height"
-                        app:srcCompat="@android:drawable/ic_media_play"
+                        app:srcCompat="@android:drawable/radiobutton_off_background"
                         android:id="@+id/button_play" android:layout_weight="1"
-                        android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"/>
+                        android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"
+                        android:button="@android:drawable/btn_radio"
+                        android:checked="false" android:clickable="true"
+                        android:textOff="play" android:textOn="stop"
+                        android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"/>
+
             </LinearLayout>
 
         </LinearLayout>
@@ -77,6 +87,12 @@
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
+                <Button
+                        android:id="@+id/button_reset"
+                        android:layout_width="0dp"
+                        android:layout_height="@android:dimen/notification_large_icon_height"
+                        android:layout_weight="1" android:layout_margin="@dimen/highlight_padding"
+                        android:text="reset" android:padding="@dimen/highlight_padding"/>
 
                 <EditText
                         android:layout_width="0dp"
@@ -84,13 +100,14 @@
                         android:inputType="number"
                         android:ems="10"
                         android:id="@+id/latency_text" android:layout_weight="1" android:text="0"
-                        android:enabled="false" android:layout_gravity="center" android:gravity="center"/>
-                <ImageButton
+                        android:enabled="false" android:layout_gravity="center" android:gravity="center"
+                        android:padding="@dimen/highlight_padding" android:layout_margin="@dimen/highlight_padding"/>
+                <Button
                         android:id="@+id/button_save"
                         android:layout_width="0dp"
                         android:layout_height="@android:dimen/notification_large_icon_height"
                         android:layout_weight="1" android:layout_margin="@dimen/highlight_padding"
-                        android:src="@android:drawable/ic_menu_save"/>
+                        android:text="ok" android:padding="@dimen/highlight_padding"/>
 
             </LinearLayout>
         </LinearLayout>

@@ -1,25 +1,26 @@
 package com.hyperana.audiolooper
 
-import android.graphics.Color
 import android.media.MediaRecorder
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity;
 
 import kotlinx.android.synthetic.main.activity_btlatency.*
 import kotlinx.android.synthetic.main.content_btlatency.*
 import java.util.*
-import kotlin.math.ceil
 import kotlin.math.floor
-import kotlin.math.round
 
-class BTLatencyActivity : AppCompatActivity() {
+class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
+
+    val PREF_BT_LATENCY = "bluetooth_latency"
 
     val TAG = "BTLatencyActivity"
     val BPMINUTE = 70
@@ -28,16 +29,24 @@ class BTLatencyActivity : AppCompatActivity() {
 
     var metronome: MetronomeViewHolder? = null
     var progressTimer: Timer? = null
+    var measure = 0
 
     var recorder: MediaRecorder? = null
     var filename = "" //set after create for directory
 
 
-    var measure = 0
+    var latency = 0
+    set(value) {
+        field = value
+        button_reset?.isEnabled = true
+    }
+    val MAX_LATENCY = 1000
+    val LATENCY_FACTOR = 100.0/MAX_LATENCY
+
     enum class State {
         PREROLL,
         RECORDING,
-        PLAYING,
+        CAN_PLAY,
         NONE
     }
     var state: State = State.NONE
@@ -48,13 +57,27 @@ class BTLatencyActivity : AppCompatActivity() {
                 container.isSelected = (value != State.NONE)
                 container.isActivated = (value == State.RECORDING)
 
-                if (value == State.NONE) progress.progress = 0
+                if (value == State.NONE) {
+                    progress.progress = 0
+                    measure = 0
+                }
                 if (value == State.RECORDING) progress.isActivated = true
             }
             button_record?.apply {
                 isSelected = (value == State.PREROLL)
                 isActivated = (value == State.RECORDING)
+                isChecked = (value == State.PREROLL || value == State.RECORDING)
             }
+
+            button_play?.apply {
+                isEnabled = (value == State.CAN_PLAY)
+            }
+
+            button_save?.apply {
+                isEnabled = true
+            }
+
+
 
         }
 
@@ -160,9 +183,40 @@ class BTLatencyActivity : AppCompatActivity() {
             }
         }
 
-        button_save?.isEnabled = false
-        button_play?.isEnabled = false
+        button_reset?.setOnClickListener {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .getInt(PREF_BT_LATENCY, 0).also {
+                    latency_slider?.progress = (it * LATENCY_FACTOR).toInt()
+                }
+            it.isEnabled = false
+        }
 
+        button_reset?.performClick()
+
+        latency_slider?.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
+                p0?.progress?.div(LATENCY_FACTOR)?.toInt()?.also {
+                    latency = it
+                    latency_text?.setText(it.toString())
+                }
+            }
+
+            override fun onStopTrackingTouch(p0: SeekBar?) {
+
+            }
+
+            override fun onStartTrackingTouch(p0: SeekBar?) {
+
+            }
+        })
+
+        button_save?.setOnClickListener {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext).edit()
+                .putInt(PREF_BT_LATENCY, latency.coerceIn(0 .. MAX_LATENCY))
+            finish()
+        }
+
+       state = State.NONE
 
     }
 
@@ -171,7 +225,12 @@ class BTLatencyActivity : AppCompatActivity() {
         stop()
     }
 
-
+    override fun onInfo(p0: MediaRecorder?, p1: Int, p2: Int) {
+        Log.d(TAG, "onInfo: $p1, $p2")
+        if (p1 == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+            //todo:alert
+        }
+    }
 
     fun stop() {
         progressTimer?.cancel()
@@ -181,7 +240,6 @@ class BTLatencyActivity : AppCompatActivity() {
         recorder?.release()
         recorder = null
 
-        measure = 0
         state = State.NONE
     }
 
@@ -219,6 +277,8 @@ class BTLatencyActivity : AppCompatActivity() {
             setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
             setOutputFile(filename)
             setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            setOnInfoListener(this@BTLatencyActivity)
+            setMaxDuration(30*1000)
 
             try {
                 prepare()
@@ -233,8 +293,7 @@ class BTLatencyActivity : AppCompatActivity() {
 
     fun stopRecording() {
         stop()
-
-        state = State.NONE
+        state = State.CAN_PLAY
     }
 
 }
