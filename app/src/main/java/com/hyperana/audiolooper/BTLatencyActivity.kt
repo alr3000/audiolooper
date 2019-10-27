@@ -1,7 +1,12 @@
 package com.hyperana.audiolooper
 
+import android.animation.ObjectAnimator
+import android.graphics.Color
+import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.preference.PreferenceManager
 import android.util.Log
 import android.view.LayoutInflater
@@ -12,11 +17,13 @@ import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.vectordrawable.graphics.drawable.ArgbEvaluator
 
 import kotlinx.android.synthetic.main.activity_btlatency.*
 import kotlinx.android.synthetic.main.content_btlatency.*
 import java.util.*
 import kotlin.math.floor
+import kotlin.math.round
 
 class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
 
@@ -31,14 +38,20 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
     var progressTimer: Timer? = null
     var measure = 0
 
-    var recorder: MediaRecorder? = null
     var filename = "" //set after create for directory
-
+    var recorder: MediaRecorder? = null
+    var player: MediaPlayer? = null
 
     var latency = 0
     set(value) {
         field = value
         button_reset?.isEnabled = true
+
+        // if currently playing, reset to apply new latency value
+        player?.also {
+            stopPlaying()
+            startPlaying()
+        }
     }
     val MAX_LATENCY = 1000
     val LATENCY_FACTOR = 100.0/MAX_LATENCY
@@ -54,7 +67,7 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
             field = value
             metronome?.apply {
 
-                container.isSelected = (value != State.NONE)
+                container.isSelected = (value == State.PREROLL)
                 container.isActivated = (value == State.RECORDING)
 
                 if (value == State.NONE) {
@@ -83,6 +96,7 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
 
     class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMinute: Int) {
         val TAG = "MetronomeVH"
+        val ANIMATION_INTERVAL = 100L
 
         var beats = listOf<View>()
 
@@ -90,7 +104,16 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
         val progressFactor = 100.0/bpMeasure
         val progressOffset = 50/bpMeasure
 
-           var index = 0
+        var index = 0
+
+        fun createBackgroundColorAnimator(view: View) : ObjectAnimator {
+            return ObjectAnimator.ofArgb(view, "backgroundColor", Color.TRANSPARENT, Color.CYAN).apply {
+
+                setDuration(ANIMATION_INTERVAL/2)
+                repeatCount = 1
+                repeatMode = ObjectAnimator.REVERSE
+            }
+        }
 
         init {
             container.findViewById<LinearLayout>(R.id.metronome_beat_box)?.also {box->
@@ -114,8 +137,9 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
                 (beatFraction * 100.0/bpMeasure).also { percent ->
 
                     progress.setProgress(percent.toInt() % 100)
-                    if (floor(beatFraction).toInt()%bpMeasure != index) {
-                        advance()
+                    (floor(beatFraction).toInt()%bpMeasure).also{
+                        if (it != index)
+                            advanceTo(it)
                     }
                     Log.d(TAG, "ms: $ms, beatFraction: $beatFraction,  $percent%, index: $index")
 
@@ -124,9 +148,14 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
             }
         }
 
-        fun advance(){
-            index = (index + 1)%bpMeasure
-            //todo: flash beat background
+        fun advanceTo(num: Int){
+            index = num //(index + 1)%bpMeasure
+
+            // flash beat background
+            beats.getOrNull(index)?.also {
+                createBackgroundColorAnimator(it).start()
+            }
+
        }
     }
 
@@ -174,23 +203,34 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
             metronome = MetronomeViewHolder(it, BPMEASURE, BPMINUTE)
         }
 
-        button_record?.setOnClickListener {
+        button_record?.setOnCheckedChangeListener { compoundButton, b ->
             try {
-                startCountdown()
+                if (b) {
+                    startCountdown()
+                }
+                else {
+                    stop()
+                }
             }
             catch (e: Exception) {
                 Log.e(TAG, "failed start record", e)
             }
         }
 
+        button_play?.setOnCheckedChangeListener { compoundButton, b ->
+            if (b) startPlaying()
+            else stopPlaying()
+        }
+
         button_reset?.setOnClickListener {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .getInt(PREF_BT_LATENCY, 0).also {
                     latency_slider?.progress = (it * LATENCY_FACTOR).toInt()
+                    latency_text?.setText(it.toString())
+                    latency = it
                 }
             it.isEnabled = false
         }
-
         button_reset?.performClick()
 
         latency_slider?.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
@@ -213,6 +253,7 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
         button_save?.setOnClickListener {
             PreferenceManager.getDefaultSharedPreferences(applicationContext).edit()
                 .putInt(PREF_BT_LATENCY, latency.coerceIn(0 .. MAX_LATENCY))
+                .apply()
             finish()
         }
 
@@ -240,6 +281,9 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
         recorder?.release()
         recorder = null
 
+        player?.release()
+        player = null
+
         state = State.NONE
     }
 
@@ -257,18 +301,19 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
 
     fun startCountdown() {
         stop()
-
-        val period = 60*1000L/BPMINUTE
         state = State.PREROLL
 
+        metronome?.advanceTo(0)
         progressTimer = Timer().apply {
             scheduleAtFixedRate(ProgressTask(), PROGRESS_INTERVAL, PROGRESS_INTERVAL)
         }
 
+        // progressTask triggers startRecording after 1st measure...
     }
 
     fun startRecording() {
         Log.d(TAG, "startRecording: ${System.currentTimeMillis()}")
+
         state = State.RECORDING
         //todo: record audio to temp file
 
@@ -292,6 +337,35 @@ class BTLatencyActivity : AppCompatActivity() , MediaRecorder.OnInfoListener {
     }
 
     fun stopRecording() {
+        stop()
+        state = State.CAN_PLAY
+    }
+
+
+    fun startPlaying() {
+        player = MediaPlayer.create(applicationContext, Uri.parse(filename)).apply {
+            setLooping(true)
+            setOnErrorListener { mediaPlayer, i, i2 ->
+                Log.w(TAG, "mediaplayer error $i, $i2")
+                //todo: alert
+                stopPlaying()
+                true // oncompletionhandler will not be called
+            }
+            setOnInfoListener { mediaPlayer, i, i2 ->
+                Log.d(TAG, "mediaplayer info $i, $i2")
+                true
+            }
+            setOnPreparedListener {
+                it.start()
+                Handler(mainLooper).postDelayed({
+                    startCountdown()
+                },
+                latency.toLong())
+            }
+        }
+    }
+
+    fun stopPlaying() {
         stop()
         state = State.CAN_PLAY
     }

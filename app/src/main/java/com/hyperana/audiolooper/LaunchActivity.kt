@@ -6,10 +6,14 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 
 class LaunchActivity : AppCompatActivity() {
+
+    val MENUITEM_BTLATENCY = "Bluetooth Calibration"
 
     // Requesting permission to RECORD_AUDIO
     private var permissionToRecordAccepted = false
@@ -53,5 +57,20 @@ class LaunchActivity : AppCompatActivity() {
 
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
 
+        menu?.add(MENUITEM_BTLATENCY)
+
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.title) {
+            MENUITEM_BTLATENCY -> {
+                startActivity(Intent(this, BTLatencyActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
 }

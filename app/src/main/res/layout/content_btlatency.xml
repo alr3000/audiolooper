@@ -23,6 +23,10 @@
                       android:gravity="center">
 
 
+            <TextView
+                    android:text="@string/btlatency_instruction"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:id="@+id/textView"/>
             <LinearLayout
                     android:id="@+id/metronome_beat_box"
                     android:layout_width="match_parent"
@@ -79,6 +83,10 @@
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" android:background="@android:color/background_light">
+            <TextView
+                    android:text="@string/btlatency_instruction_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:id="@+id/textView2"/>
             <SeekBar
                     android:layout_width="match_parent"
                     android:layout_height="@android:dimen/notification_large_icon_height"
