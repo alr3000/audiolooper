@@ -55,7 +55,7 @@
                         android:checked="false" android:clickable="true"
                         android:textOff="record" android:textOn="cancel"
                         android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"
-                />
+                        android:duplicateParentState="false"/>
                 <ToggleButton
                         android:layout_width="0dp"
                         android:layout_height="@android:dimen/notification_large_icon_height"
@@ -65,7 +65,8 @@
                         android:button="@android:drawable/btn_radio"
                         android:checked="false" android:clickable="true"
                         android:textOff="play" android:textOn="stop"
-                        android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"/>
+                        android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"
+                        android:duplicateParentState="false"/>
 
             </LinearLayout>
 
