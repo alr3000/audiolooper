@@ -51,9 +51,8 @@
                         app:srcCompat="@android:drawable/radiobutton_off_background"
                         android:id="@+id/button_record" android:layout_weight="1"
                         android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"
-                        android:button="@android:drawable/btn_radio"
                         android:checked="false" android:clickable="true"
-                        android:textOff="record" android:textOn="cancel"
+                        android:textOff="@string/record_start" android:textOn="@string/cancel"
                         android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"
                         android:duplicateParentState="false"/>
                 <ToggleButton
@@ -62,9 +61,8 @@
                         app:srcCompat="@android:drawable/radiobutton_off_background"
                         android:id="@+id/button_play" android:layout_weight="1"
                         android:layout_margin="@dimen/highlight_padding" android:tint="@color/active_color"
-                        android:button="@android:drawable/btn_radio"
                         android:checked="false" android:clickable="true"
-                        android:textOff="play" android:textOn="stop"
+                        android:textOff="@string/play_start" android:textOn="@string/stop"
                         android:layout_gravity="center|center_horizontal" android:buttonTint="@color/active_color"
                         android:duplicateParentState="false"/>
 
@@ -101,7 +99,7 @@
                         android:layout_width="0dp"
                         android:layout_height="@android:dimen/notification_large_icon_height"
                         android:layout_weight="1" android:layout_margin="@dimen/highlight_padding"
-                        android:text="reset" android:padding="@dimen/highlight_padding"/>
+                        android:text="@string/reset" android:padding="@dimen/highlight_padding"/>
 
                 <EditText
                         android:layout_width="0dp"
@@ -116,7 +114,7 @@
                         android:layout_width="0dp"
                         android:layout_height="@android:dimen/notification_large_icon_height"
                         android:layout_weight="1" android:layout_margin="@dimen/highlight_padding"
-                        android:text="ok" android:padding="@dimen/highlight_padding"/>
+                        android:text="@string/ok" android:padding="@dimen/highlight_padding"/>
 
             </LinearLayout>
         </LinearLayout>

@@ -18,6 +18,7 @@
             android:label="@string/title_activity_btlatency"
             android:parentActivityName=".LaunchActivity"
             android:windowSoftInputMode="stateHidden"
+            android:screenOrientation="userPortrait"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

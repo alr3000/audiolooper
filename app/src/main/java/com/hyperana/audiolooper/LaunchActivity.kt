@@ -20,6 +20,8 @@ class LaunchActivity : AppCompatActivity() {
     private var permissions: Array<String> = arrayOf(Manifest.permission.RECORD_AUDIO)
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
+    //todo: audio track selection fragment with list generated from fileobserver and add action
+    //todo: audio track recording fragment
 
     override fun onRequestPermissionsResult(
         requestCode: Int,

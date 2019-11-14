@@ -90,12 +90,12 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
     }
 
 
-    fun start() {
+    fun start(delay: Long = 0) {
         Log.d(TAG, "startMetronome")
 
         beatTimer?.cancel()
         beatTimer = Timer().apply {
-            scheduleAtFixedRate(BeatTask(), beatInterval, beatInterval)
+            scheduleAtFixedRate(BeatTask(), delay + beatInterval, beatInterval)
         }
     }
 

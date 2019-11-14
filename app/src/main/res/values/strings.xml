@@ -1,8 +1,20 @@
 <resources>
     <string name="empty"></string>
     <string name="app_name">Audio Looper</string>
+
+    <!-- btlatency activity -->
     <string name="title_activity_btlatency">Bluetooth Calibration</string>
     <string name="btlatency_instruction">1. Record a loop clapping in time to the metronome.</string>
     <string name="btlatency_instruction_2">2. Replay it through your Bluetooth device and adjust the metronome delay until the sounds and visualization are matched.</string>
+
+    <!-- alerts -->
     <string name="no_record_permission_alert">Recording is not be available. Check App Permissions in your phone\'s Settings Menu.</string>
+
+    <!-- buttons -->
+    <string name="record_start">Record</string>
+    <string name="cancel">Cancel</string>
+    <string name="play_start">Play</string>
+    <string name="stop">Stop</string>
+    <string name="ok">Ok</string>
+    <string name="reset">Reset</string>
 </resources>
