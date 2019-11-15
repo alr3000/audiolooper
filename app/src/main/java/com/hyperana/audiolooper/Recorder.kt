@@ -1,7 +1,6 @@
 package com.hyperana.audiolooper
 
 import android.media.MediaRecorder
-import android.util.JsonWriter
 import android.util.Log
 import java.io.File
 
@@ -62,36 +61,18 @@ class Recorder(val audioDirectory: File, val dataDirectory: File) :
 
     }
 
-    fun stop() {
-        try {
-            saveFileData(
-                filename!!, mapOf(
+    fun stop() : Map<String, String> {
+        recorder?.stop()
+        release()
+        return mapOf(
                     DATA_RECORD_LEAD to recordLeadTime.toString()
                 )
-            )
-        }
-        catch (e: Exception) {
-            Log.d(TAG, "failed save data", e)
-        }
+
     }
 
 
 
-    fun saveFileData(filename: String, map: Map<String, String>) {
 
-        File(dataDirectory, filename).outputStream().writer()
-            .also { writer ->
-                JsonWriter(writer).also { json ->
-                    json.beginObject()
-                    map.entries.forEach { (k, v) ->
-                        json.name(k)
-                        json.value(v)
-                    }
-                    json.endObject()
-                }
-                writer.close()
-            }
-    }
 
 
 

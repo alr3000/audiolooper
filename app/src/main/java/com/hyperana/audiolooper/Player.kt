@@ -68,14 +68,14 @@ class Player(val applicationContext: Context, val audioFile: File, val audioData
 
                 player.seekTo(seekTo ?: 0, MediaPlayer.SEEK_CLOSEST_SYNC)
                 isReady = true
-                Log.d(TAG, "mediaplayer2  @seekTo: $seekTo")
+                Log.d(TAG, "mediaplayer1  @seekTo: $seekTo")
 
             }
             // on completion, seek again to be ready for next play
             setOnCompletionListener { thisPlayer ->
                 Log.d(TAG, "player complete")
                 thisPlayer.seekTo(seekTo ?: 0, MediaPlayer.SEEK_CLOSEST_SYNC)
-                Log.d(TAG, "mediaplayer2  @seekTo: $seekTo")
+                Log.d(TAG, "mediaplayer1  @seekTo: $seekTo")
             }
 
         }
@@ -110,11 +110,11 @@ class Player(val applicationContext: Context, val audioFile: File, val audioData
 
     fun stop() {
         Log.d(TAG, "stop")
+
         playTimer?.shutdownNow()
         playTimer = null
 
-        player?.stop()
-        altPlayer?.stop()
+       preparePlayers()
     }
 
     fun createMediaPlayer(applicationContext: Context) : MediaPlayer {

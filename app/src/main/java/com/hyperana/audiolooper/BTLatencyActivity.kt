@@ -67,8 +67,8 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                 startPlaying()
             }
         }
-    val MAX_LATENCY = 500
-    val MIN_LATENCY = -500 // must be abs value < PLAYBACK_BEAT_TIME
+    val MAX_LATENCY = 900
+    val MIN_LATENCY = -100 // must be abs value < PLAYBACK_BEAT_TIME
     val LATENCY_FACTOR = 100.0/(MAX_LATENCY - MIN_LATENCY)
 
     enum class State {
@@ -133,8 +133,6 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                 if (!it.exists() && !it.mkdirs()) null else it
             }
 
-            recorder = Recorder(audioDirectory!!, dataDirectory!!)
-            player = audioFile?.let { Player(applicationContext, it, dataFile?.let { parseFileMetadata(it) }) }
 
             // not checkedchanged as only want to respond to user input
             button_record?.setOnClickListener { v ->
@@ -163,6 +161,8 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                     }
                 it.isEnabled = false
             }
+
+            // do this before setting listeners on the progress bar and before attaching player
             button_reset?.performClick()
 
             latency_slider?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -188,6 +188,10 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                     .apply()
                 finish()
             }
+
+            recorder = Recorder(audioDirectory!!, dataDirectory!!)
+            player = audioFile?.let { Player(applicationContext, it, dataFile?.let { parseFileMetadata(it) }) }
+
         }
         catch (e: Exception) {
             Log.e(TAG, "failed oncreate", e)
@@ -276,6 +280,17 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
         Log.d(TAG, "stopRecording")
 
         recorder?.stop()
+            ?.plus(
+                // add metadata
+                mapOf(
+                    DATA_BPMEASURE to BPMEASURE.toString(),
+                    DATA_BPMINUTE to BPMINUTE.toString()
+                )
+            )
+            ?.also { data ->
+                saveFileMetadata(dataFile!!, data)
+            }
+
         stop()
 
         // todo: player could be controlled by a file observer
