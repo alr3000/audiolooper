@@ -28,6 +28,8 @@ class Player(val applicationContext: Context, val audioFile: File, val audioData
 
     //todo: make this a prepare step so mediaplayers can be dumped and recreated on error
     init {
+        Log.d(TAG, "initialize player: \n${audioFile.absolutePath}\n${audioData}")
+
         seekTo = audioData?.get(DATA_RECORD_LEAD)?.toLongOrNull()
         preparePlayers()
     }

@@ -110,6 +110,10 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
         }
     }
 
+    fun setTitle(title: String?) {
+        container.findViewById<TextView>(R.id.metronome_title)?.text = title
+    }
+
     private fun playBeat(num: Int) {
         Log.d(TAG, "*beat $num*")
 

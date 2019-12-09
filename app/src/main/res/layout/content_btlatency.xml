@@ -21,12 +21,16 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                       android:orientation="vertical" android:background="@android:color/background_light"
                       android:gravity="center">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:id="@+id/metronome_title" android:text="boo" android:gravity="center"
+                      android:textColor="@color/active_color" android:textStyle="bold"/>
 
 
             <TextView
                     android:text="@string/btlatency_instruction"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:id="@+id/textView"/>
+
             <LinearLayout
                     android:id="@+id/metronome_beat_box"
                     android:layout_width="match_parent"

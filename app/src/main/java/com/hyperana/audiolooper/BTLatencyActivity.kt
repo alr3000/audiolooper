@@ -6,6 +6,7 @@ import android.preference.PreferenceManager
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.SeekBar
+import android.widget.Toast
 import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,7 +21,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
     val BPMINUTE = 120
     val BPMEASURE = 8
 
-    val PLAYBACK_BEAT_TIME = 500L // ms after user start to align first beat with metronome
+    val PLAYBACK_BEAT_TIME = 1000L // ms after user start to align first beat with metronome
 
     var FILENAME = "calibration"
 
@@ -37,7 +38,10 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
     var dataDirectory: File? = null
     val dataFile: File?
         get() {
-            return dataDirectory?.listFiles()?.find { it.nameWithoutExtension.equals(FILENAME) }
+            return dataDirectory?.let {dir ->
+                dir.listFiles()?.find { it.nameWithoutExtension.equals(FILENAME) }
+                    ?: File(dir, FILENAME)
+            }
         }
 
     var metronome: MetronomeViewHolder? = null
@@ -127,10 +131,16 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
 
 
             audioDirectory = getExternalFilesDir(AUDIO_DIR_NAME)?.let {
-                if (!it.exists() && !it.mkdirs()) null else it
+                if (!it.exists() && !it.mkdirs()) {
+                    Log.e(TAG, "failed create data directory")
+                    null
+                } else it
             }
             dataDirectory = getExternalFilesDir(DATA_DIR_NAME)?.let {
-                if (!it.exists() && !it.mkdirs()) null else it
+                if (!it.exists() && !it.mkdirs()) {
+                    Log.e(TAG, "failed create data directory")
+                    null
+                } else it
             }
 
 
@@ -219,6 +229,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
 
         if ((state == State.PREROLL) && (beat == BPMEASURE - 1) && (measure == 0)) {
             recorder?.markStart()
+            metronome?.setTitle("RECORDING")
             state = State.RECORDING
         }
         else if ((state == State.RECORDING) && (measure == 2)) {
@@ -237,6 +248,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
     fun stop() {
         Log.d(TAG, "stop")
 
+        metronome?.setTitle(null)
         metronome?.stop()
         player?.stop()
         recorder?.release()
@@ -260,6 +272,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
             state = State.PREROLL
 
             // start beats:
+            metronome?.setTitle("GET READY")
             metronome?.start()
             Log.d(TAG, "recording started")
 
@@ -288,14 +301,22 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                 )
             )
             ?.also { data ->
-                saveFileMetadata(dataFile!!, data)
+                try {
+                    dataFile!!.also {
+                        saveFileMetadata(it, data)
+                        Log.d(TAG, "metadata saved: ${it.absolutePath}")
+                    }
+                }
+                catch (e: Exception) {
+                    Log.e(TAG, "failed save metadata", e)
+                    Toast.makeText(this, "Failed to save recording", Toast.LENGTH_LONG).show()
+                }
             }
 
         stop()
 
         // todo: player could be controlled by a file observer
         audioFile?.also {
-            Log.d(TAG, "have audiofile")
             player?.release()
             player = Player(applicationContext, it, dataFile?.let {parseFileMetadata(it)})
 
@@ -316,6 +337,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
             player?.startRepeatedPlayback(PLAYBACK_BEAT_TIME, 60 * 1000L * BPMEASURE / BPMINUTE)
 
             // schedule metronome delayed start
+            metronome?.setTitle("PLAYING")
             metronome?.start(PLAYBACK_BEAT_TIME + latency.toLong())
 
             Log.d(TAG, "schedule mediaplayer $PLAYBACK_BEAT_TIME and metronome ${PLAYBACK_BEAT_TIME + latency}")
