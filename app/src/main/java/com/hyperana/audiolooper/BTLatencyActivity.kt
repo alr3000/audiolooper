@@ -1,18 +1,27 @@
 package com.hyperana.audiolooper
 
 
+import android.content.Context
+import android.media.AudioManager
+import android.media.AudioPlaybackConfiguration
+import android.media.AudioRecordingConfiguration
+import android.media.ToneGenerator
 import android.os.Bundle
+import android.os.Handler
 import android.preference.PreferenceManager
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.Toast
 import android.widget.ToggleButton
-import androidx.appcompat.app.AppCompatActivity;
-
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_btlatency.*
 import kotlinx.android.synthetic.main.content_btlatency.*
 import java.io.File
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+
 
 class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
 
@@ -21,9 +30,18 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
     val BPMINUTE = 120
     val BPMEASURE = 8
 
-    val PLAYBACK_BEAT_TIME = 1000L // ms after user start to align first beat with metronome
 
     var FILENAME = "calibration"
+
+    var audioManager: AudioManager? = null
+    private val executor = Executors.newScheduledThreadPool(2)
+
+    internal class ThreadPerTaskExecutor : Executor {
+        override fun execute(r: Runnable) {
+            Thread(r).start()
+        }
+    }
+
 
     @Volatile
     var audioDirectory: File? = null
@@ -31,8 +49,8 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
         get() {
             Log.d(TAG, "files: ${audioDirectory?.list()?.joinToString()}")
             return audioDirectory?.listFiles()?.find {
-                    it.nameWithoutExtension.equals(FILENAME)
-                }
+                it.nameWithoutExtension.equals(FILENAME)
+            }
         }
     @Volatile
     var dataDirectory: File? = null
@@ -48,7 +66,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
     var recorder: Recorder? = null
 
     // player is set on create, and after recording stopped, nulled on stop()
-    var player: Player? = null
+    var player: SoundPoolPlayer? = null
         set(value) {
             field = value
             runOnUiThread {
@@ -57,6 +75,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
             }
         }
 
+    var sound = ToneGenerator(AudioManager.STREAM_MUSIC, 0)
 
     var latency = 0
         set(value) {
@@ -71,8 +90,8 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                 startPlaying()
             }
         }
-    val MAX_LATENCY = 900
-    val MIN_LATENCY = -100 // must be abs value < PLAYBACK_BEAT_TIME
+    val MAX_LATENCY = 800
+    val MIN_LATENCY = -200 // must be abs value < PLAYBACK_BEAT_TIME
     val LATENCY_FACTOR = 100.0/(MAX_LATENCY - MIN_LATENCY)
 
     enum class State {
@@ -112,6 +131,23 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
             }
         }
 
+
+    // *************************** CB's:
+    val playbackConfigCB = object: AudioManager.AudioPlaybackCallback() {
+
+        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>?) {
+            super.onPlaybackConfigChanged(configs)
+            Log.d(TAG, "playback configs: ${configs?.joinToString()}")
+        }
+    }
+
+    val recordingConfigCB = object: AudioManager.AudioRecordingCallback() {
+
+        override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>?) {
+            super.onRecordingConfigChanged(configs)
+            Log.d(TAG, "recording configs: ${configs?.joinToString()}")
+        }
+    }
     // *************************** Lifecycle:
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,6 +161,22 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
         }
 
         try {
+
+
+
+            val sampleRate = (getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+                .getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
+                .also {
+                    Log.d(TAG, "device output sample rate: $it")
+                }
+                .toIntOrNull()
+                ?: APP_SAMPLE_RATE
+                /*.apply {
+
+                registerAudioPlaybackCallback(playbackConfigCB, mHandler)
+                registerAudioRecordingCallback(recordingConfigCB, mHandler)
+            }*/
+
             findViewById<ViewGroup>(R.id.metronome_frame)?.also {
                 metronome = MetronomeViewHolder(it, BPMEASURE, BPMINUTE, this)
             }
@@ -199,8 +251,8 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
                 finish()
             }
 
-            recorder = Recorder(audioDirectory!!, dataDirectory!!)
-            player = audioFile?.let { Player(applicationContext, it, dataFile?.let { parseFileMetadata(it) }) }
+            recorder = Recorder(audioDirectory!!, dataDirectory!!, sampleRate)
+            player = audioFile?.let { SoundPoolPlayer(applicationContext, it, dataFile?.let { parseFileMetadata(it) }) }
 
         }
         catch (e: Exception) {
@@ -218,19 +270,37 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
 
     override fun onResume() {
         super.onResume()
-
     }
 
     //********************************************** Listeners:
+
 
     // recorder records first two full measures and marks beginning of the second measure:
     override fun onBeat(beat: Int, measure: Int) {
         Log.d(TAG, "onbeat $beat ($measure)")
 
-        if ((state == State.PREROLL) && (beat == BPMEASURE - 1) && (measure == 0)) {
-            recorder?.markStart()
-            metronome?.setTitle("RECORDING")
-            state = State.RECORDING
+        if (state == State.PREROLL) {
+
+            // start recording before target measure:
+            if ((measure == 0) && (beat == 0)) {
+
+                // schedule start of recording relative to next measure start:
+                executor.schedule(
+                    {
+                        recorder?.begin()
+                    },
+                    (BPMEASURE * 60 * 1000L/BPMINUTE) - APP_RECORD_LEAD,
+                    TimeUnit.MILLISECONDS
+                )
+                Log.d(TAG, "recording scheduled")
+            }
+
+            // mark actual start of target measure:
+            if ((beat == 0) && (measure == 1)) {
+                recorder?.markStart()
+                metronome?.setTitle("RECORDING")
+                state = State.RECORDING
+            }
         }
         else if ((state == State.RECORDING) && (measure == 2)) {
 
@@ -243,16 +313,17 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
 
 
 
+
     // ***************************************** Logic:
 
     fun stop() {
         Log.d(TAG, "stop")
 
-        metronome?.setTitle(null)
         metronome?.stop()
         player?.stop()
         recorder?.release()
 
+        metronome?.setTitle(null)
 
         state = State.NONE
     }
@@ -264,17 +335,18 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
             stop()
 
             // remove playback of old recording:
+            // todo: not necessary with soundpool
             player?.release()
             player = null
 
-            // start new:
-            recorder?.start(FILENAME)
+            // prepare new recording:
             state = State.PREROLL
+            recorder?.prepareFile(FILENAME)
 
             // start beats:
             metronome?.setTitle("GET READY")
             metronome?.start()
-            Log.d(TAG, "recording started")
+
 
         } catch (e: Exception) {
             Log.e(TAG, "prepare() failed")
@@ -318,7 +390,7 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
         // todo: player could be controlled by a file observer
         audioFile?.also {
             player?.release()
-            player = Player(applicationContext, it, dataFile?.let {parseFileMetadata(it)})
+            player = SoundPoolPlayer(applicationContext, it, dataFile?.let {parseFileMetadata(it)})
 
             state = State.CAN_PLAY
         }
@@ -332,18 +404,27 @@ class BTLatencyActivity : AppCompatActivity() ,  MetronomeViewHolder.Listener {
     fun startPlaying() {
         Log.d(TAG, "startPlaying")
 
+        try {
+
             // delay first play to allow negative latency adjustment
             // repeat every measure
-            player?.startRepeatedPlayback(PLAYBACK_BEAT_TIME, 60 * 1000L * BPMEASURE / BPMINUTE)
+            player!!.startRepeatedPlayback(APP_PLAYBACK_LEAD, 60 * 1000L * BPMEASURE / BPMINUTE)
 
             // schedule metronome delayed start
-            metronome?.setTitle("PLAYING")
-            metronome?.start(PLAYBACK_BEAT_TIME + latency.toLong())
+            metronome!!.apply {
+                setTitle("PLAYING")
+                start(APP_PLAYBACK_LEAD + latency.toLong())
+            }
 
-            Log.d(TAG, "schedule mediaplayer $PLAYBACK_BEAT_TIME and metronome ${PLAYBACK_BEAT_TIME + latency}")
+            Log.d(TAG, "schedule mediaplayer $APP_PLAYBACK_LEAD and metronome ${APP_PLAYBACK_LEAD + latency}")
 
             state = State.PLAYING
 
+
+        }
+        catch (e: Exception) {
+            Log.e(TAG, "failed start playing", e)
+        }
 
     }
 

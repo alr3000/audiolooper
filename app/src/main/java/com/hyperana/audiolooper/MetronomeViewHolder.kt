@@ -48,7 +48,12 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
         var measureIndex = 0
 
         override fun run() {
+          //  Log.d(TAG, "metronome run")
             container.post {
+            //    Log.d(TAG, "metronome post")
+                if (beatTimer == null) {
+                    return@post
+                }
                 if (isFirst) {
                     beatIndex = 0
                     measureIndex = 0
@@ -62,9 +67,10 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
                 if (beatIndex == 0) {
                     progressAnimator.start()
                 }
-                playBeat(beatIndex)
 
+                playBeat(beatIndex)
                 listener?.onBeat(beatIndex, measureIndex)
+
             }
         }
     }
@@ -73,6 +79,7 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
 
 
     init {
+
         container.findViewById<LinearLayout>(R.id.metronome_beat_box)?.also { box->
             box.removeAllViews()
 
@@ -90,12 +97,12 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
     }
 
 
-    fun start(delay: Long = 0) {
+    fun start(delay: Long = 0L) {
         Log.d(TAG, "startMetronome")
 
         beatTimer?.cancel()
         beatTimer = Timer().apply {
-            scheduleAtFixedRate(BeatTask(), delay + beatInterval, beatInterval)
+            scheduleAtFixedRate(BeatTask(), delay, beatInterval)
         }
     }
 
@@ -115,10 +122,10 @@ class MetronomeViewHolder(val container: ViewGroup, val bpMeasure: Int, val bpMi
     }
 
     private fun playBeat(num: Int) {
-        Log.d(TAG, "*beat $num*")
+        Log.d(TAG, "playBeat $num*")
 
         // play beat sound
-        sound.startTone(ToneGenerator.TONE_PROP_BEEP)
+        sound.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE, 60)
 
         // flash beat background
         beats.forEachIndexed { i, v ->

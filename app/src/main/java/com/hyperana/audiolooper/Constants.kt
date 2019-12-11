@@ -4,6 +4,8 @@ import android.util.JsonWriter
 import android.util.Log
 import org.json.JSONObject
 import java.io.File
+import java.io.InputStream
+import java.nio.ByteBuffer
 
 // audio file metadata keys:
 val DATA_RECORD_LEAD = "recordLeadTimeMs"
@@ -16,6 +18,9 @@ val PREF_BT_LATENCY = "bluetooth_latency"
 // app constants:
 val AUDIO_DIR_NAME = "audio"
 val DATA_DIR_NAME = "data"
+val APP_RECORD_LEAD = 100L //ms start record before first beat because it doesn't start immediately
+val APP_PLAYBACK_LEAD = 1000L //ms delay play to allow match-up with recording and metronome according to calibration
+val APP_SAMPLE_RATE = 44100
 
 //************************* Helpers:
 
@@ -52,4 +57,24 @@ fun saveFileMetadata(file: File, map: Map<String, String>) {
             }
             writer.close()
         }
+}
+
+fun loadFileToBuffer(file: File, bytes: ByteArray) : Boolean {
+        var stream: InputStream? = null
+        var result = false
+        var index = 0
+        try {
+            stream  = file.inputStream()
+            do {
+                val k = stream.read(bytes, index, bytes.size - index)
+                index = index + k
+            } while (k != -1)
+            result = true
+        } catch (e: Exception) {
+            Log.e("loadFileToBuffer", "failed read file", e)
+        }
+        finally {
+            stream?.close()
+            return result
+    }
 }

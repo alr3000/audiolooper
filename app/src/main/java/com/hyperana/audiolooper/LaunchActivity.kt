@@ -30,7 +30,7 @@ class LaunchActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionToRecordAccepted = if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
+            grantResults.get(0) == PackageManager.PERMISSION_GRANTED
         } else {
             false
         }
